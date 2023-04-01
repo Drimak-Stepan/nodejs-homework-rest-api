@@ -9,7 +9,7 @@ const router = express.Router();
 
 const addSchema = Joi.object({
   name: Joi.string().required().messages({
-    "any.required": `"name" is required`,
+    "any.required": `"missing required name field"`,
   }),
   email: Joi.string().required().messages({
     "any.required": `"email" is required`,
@@ -30,13 +30,14 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.get("/:contactId", async (req, res, next) => {
+router.get("/:id", async (req, res, next) => {
   try {
-    const { contactId } = req.params;
-    const result = await contacts.getContactById(contactId);
+    const { id } = req.params;
+    const result = await contacts.getContactById(id);
     if (!result) {
-      throw HttpError(404, `Contact with ${contactId} not found`);
+      throw HttpError(404, "Not found");
     }
+    console.log(result);
     res.json(result);
   } catch (error) {
     next(error);
@@ -56,32 +57,31 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.delete("/:contactId", async (req, res, next) => {
+router.delete("/:id", async (req, res, next) => {
   try {
-    const { contactId } = req.params;
-    const result = await contacts.removeContact(contactId);
+    const { id } = req.params;
+    const result = await contacts.removeContact(id);
     if (!result) {
-      throw HttpError(404, `Contact with ${contactId} not found`);
+      throw HttpError(404, `Not found`);
     }
-    // res.status(204).send()
     res.json({
-      message: "Delete success",
+      message: "contact deleted",
     });
   } catch (error) {
     next(error);
   }
 });
 
-router.put("/:contactId", async (req, res, next) => {
+router.put("/:id", async (req, res, next) => {
   try {
     const { error } = addSchema.validate(req.body);
     if (error) {
-      throw HttpError(400, error.message);
+      throw HttpError(400, "missing fields");
     }
-    const { contactId } = req.params;
-    const result = await contacts.updateContact(contactId, req.body);
+    const { id } = req.params;
+    const result = await contacts.updateContact(id, req.body);
     if (!result) {
-      throw HttpError(404, `Contact with ${contactId} not found`);
+      throw HttpError(404, `Not found`);
     }
     res.json(result);
   } catch (error) {
