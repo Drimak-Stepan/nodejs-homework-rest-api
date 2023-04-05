@@ -11,7 +11,7 @@ const {
 const {
   addContactValidator,
   updateContactValidator,
-} = require("../../middlewars/validator");
+} = require("../../middlewars");
 
 const router = express.Router();
 
