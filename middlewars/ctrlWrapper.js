@@ -3,16 +3,11 @@ const ctrlWrapper = (ctrl) => {
     try {
       await ctrl(req, res, next);
     } catch (error) {
-      next(handleInternalError(error));
+      next(error);
     }
   };
 
   return func;
 };
-
-function handleInternalError(error) {
-  console.error(error.message);
-  return new Error("Internal server error");
-}
 
 module.exports = ctrlWrapper;

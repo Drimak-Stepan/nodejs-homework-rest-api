@@ -1,8 +1,7 @@
 const ctrlWrapper = require("./ctrlWrapper");
-const { addContactValidator, updateContactValidator } = require("./validator");
+const validateBody = require("./validator");
 
 module.exports = {
   ctrlWrapper,
-  addContactValidator,
-  updateContactValidator,
+  validateBody,
 };

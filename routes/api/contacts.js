@@ -6,20 +6,24 @@ const {
   add,
   remove,
   update,
+  updateStatusContact,
 } = require("../../controllers/contactsController");
 
-const {
-  addContactValidator,
-  updateContactValidator,
-} = require("../../middlewars");
+const { validateBody } = require("../../middlewars");
+const { schemas } = require("../../models/contact");
 
 const router = express.Router();
 
 router
   .get("/", getAllContacts)
   .get("/:contactId", getById)
-  .post("/", addContactValidator, add)
+  .post("/", validateBody(schemas.addContactSchema), add)
   .delete("/:contactId", remove)
-  .put("/:contactId", updateContactValidator, update);
+  .put("/:contactId", validateBody(schemas.updateContactSchema), update)
+  .patch(
+    "/:contactId/favorite",
+    validateBody(schemas.updateFavoriteSchema),
+    updateStatusContact
+  );
 
 module.exports = router;
