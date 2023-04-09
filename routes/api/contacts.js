@@ -9,19 +9,25 @@ const {
   updateStatusContact,
 } = require("../../controllers/contactsController");
 
-const { validateBody } = require("../../middlewars");
+const { validateBody, validateId } = require("../../middlewars");
 const { schemas } = require("../../models/contact");
 
 const router = express.Router();
 
 router
   .get("/", getAllContacts)
-  .get("/:contactId", getById)
+  .get("/:contactId", validateId, getById)
   .post("/", validateBody(schemas.addContactSchema), add)
-  .delete("/:contactId", remove)
-  .put("/:contactId", validateBody(schemas.updateContactSchema), update)
+  .delete("/:contactId", validateId, remove)
+  .put(
+    "/:contactId",
+    validateId,
+    validateBody(schemas.updateContactSchema),
+    update
+  )
   .patch(
     "/:contactId/favorite",
+    validateId,
     validateBody(schemas.updateFavoriteSchema),
     updateStatusContact
   );
