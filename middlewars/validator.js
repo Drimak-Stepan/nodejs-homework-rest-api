@@ -1,43 +1,15 @@
-const Joi = require("joi");
+const { HttpError } = require("../helpers");
 
-const addContactSchema = Joi.object({
-  name: Joi.string().min(3).max(30).trim().required().label("Name"),
-  email: Joi.string().min(3).max(30).trim().email().required().label("Email"),
-  phone: Joi.string().min(6).max(30).trim().required().label("Phone"),
-});
+const validateBody = (schema) => {
+  const func = async (req, res, next) => {
+    const { error } = schema.validate(req.body);
+    if (error) {
+      next(HttpError(400, error.message));
+    }
+    next();
+  };
 
-const updateContactSchema = Joi.object({
-  name: Joi.string().min(3).max(30).trim().label("Name"),
-  email: Joi.string().min(3).max(30).trim().email().label("Email"),
-  phone: Joi.string().min(6).max(30).trim().label("Phone"),
-});
-
-const addContactValidator = (req, res, next) => {
-  const { error } = addContactSchema.validate(req.body, { abortEarly: false });
-
-  if (error) {
-    const missingField = error.details[0].context.key;
-    return res
-      .status(400)
-      .json({ message: `Missing required '${missingField}' field` });
-  }
-
-  next();
+  return func;
 };
 
-const updateContactValidator = (req, res, next) => {
-  if (!Object.keys(req.body).length)
-    return res.status(400).json({ message: "missing fields" });
-
-  const { error } = updateContactSchema.validate(req.body, {
-    abortEarly: false,
-  });
-
-  if (error) {
-    return res.status(400).json({ message: error.details[0].message });
-  }
-
-  next();
-};
-
-module.exports = { addContactValidator, updateContactValidator };
+module.exports = validateBody;

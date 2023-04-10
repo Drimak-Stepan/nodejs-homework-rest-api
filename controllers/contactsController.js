@@ -1,78 +1,74 @@
-const {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
-} = require("../models/contacts");
+const { Contact } = require("../models/contact");
 
-function handleInternalError(error) {
-  console.error(error.message);
-  return new Error("Internal server error");
-}
+const { ctrlWrapper } = require("../middlewars");
 
-const getAllContacts = async (_, res, next) => {
-  try {
-    const contacts = await listContacts();
-    res.status(200).json(contacts);
-  } catch (err) {
-    next(handleInternalError(err));
-  }
+const { HttpError } = require("../helpers");
+
+const getAllContacts = async (_, res) => {
+  const contacts = await Contact.find();
+  res.status(200).json(contacts);
 };
 
-const getById = async ({ params }, res, next) => {
-  try {
-    const { contactId } = params;
-    const contact = await getContactById(contactId);
-    if (!contact) {
-      res.status(404).json({ message: "Not found" });
-      return;
-    }
-    res.status(200).json(contact);
-  } catch (err) {
-    next(handleInternalError(err));
+const getById = async ({ params }, res) => {
+  const { contactId } = params;
+  const contact = await Contact.findById(contactId);
+
+  if (!contact) {
+    throw HttpError(404, "Not found");
   }
+  res.status(200).json(contact);
 };
 
-const add = async (req, res, next) => {
-  try {
-    const newContact = await addContact(req.body);
-    res.status(201).json(newContact);
-  } catch (err) {
-    next(handleInternalError(err));
-  }
+const add = async (req, res) => {
+  const newContact = await Contact.create(req.body);
+  res.status(201).json(newContact);
 };
 
-const remove = async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const result = await removeContact(contactId);
-    if (!result) {
-      return res.status(404).json({ message: "Not found" });
-    }
-    res.status(200).json(result);
-  } catch (err) {
-    next(handleInternalError(err));
+const remove = async (req, res) => {
+  const { contactId } = req.params;
+  const result = await Contact.findByIdAndDelete(contactId);
+
+  if (!result) {
+    throw HttpError(404, "Not found");
   }
+  res.status(200).json({
+    message: "Contact deleted",
+  });
 };
 
-const update = async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const updatedContact = await updateContact(contactId, req.body);
-    if (!updatedContact) {
-      return res.status(404).json({ message: "Not found" });
-    }
-    res.status(200).json(updatedContact);
-  } catch (err) {
-    next(handleInternalError(err));
+const update = async (req, res) => {
+  const { contactId } = req.params;
+
+  if (!Object.keys(req.body).length)
+    return res.status(400).json({ message: "missing fields" });
+
+  const updatedContact = await Contact.findByIdAndUpdate(contactId, req.body, {
+    new: true,
+  });
+
+  if (!updatedContact) {
+    throw HttpError(404, "Not found");
   }
+  res.json(updatedContact);
+};
+
+const updateStatusContact = async (req, res) => {
+  const { contactId } = req.params;
+  const updatedContact = await Contact.findByIdAndUpdate(contactId, req.body, {
+    new: true,
+  });
+  console.log(updatedContact);
+  if (!updatedContact) {
+    throw HttpError(404, "Not found");
+  }
+  res.json(updatedContact);
 };
 
 module.exports = {
-  getAllContacts,
-  getById,
-  add,
-  update,
-  remove,
+  getAllContacts: ctrlWrapper(getAllContacts),
+  getById: ctrlWrapper(getById),
+  add: ctrlWrapper(add),
+  update: ctrlWrapper(update),
+  remove: ctrlWrapper(remove),
+  updateStatusContact: ctrlWrapper(updateStatusContact),
 };
