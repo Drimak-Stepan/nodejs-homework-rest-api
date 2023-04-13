@@ -45,9 +45,20 @@ const loginSchema = Joi.object({
   }),
 });
 
+const arr = ["starter", "pro", "business"];
+const updateSchema = Joi.object({
+  subscription: Joi.string()
+    .required()
+    .valid(...arr)
+    .messages({
+      "any.valid": `subscription must be one of ["starter", "pro", "business"]`,
+    }),
+});
+
 const schemas = {
   registerSchema,
   loginSchema,
+  updateSchema,
 };
 
 const User = model("user", userSchema);
