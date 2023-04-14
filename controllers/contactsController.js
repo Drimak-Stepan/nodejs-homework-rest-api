@@ -4,14 +4,23 @@ const { ctrlWrapper } = require("../middlewars");
 
 const { HttpError } = require("../helpers");
 
-const getAllContacts = async (_, res) => {
-  const contacts = await Contact.find();
+const getAllContacts = async (req, res) => {
+  const { _id: owner } = req.user;
+  const { page = 1, limit = 20, ...favotite } = req.query;
+  const skip = (page - 1) * limit;
+  const contacts = await Contact.find({ owner, ...favotite }, undefined, {
+    skip,
+    limit,
+  }).populate("owner", "subscription email");
   res.status(200).json(contacts);
 };
 
-const getById = async ({ params }, res) => {
-  const { contactId } = params;
-  const contact = await Contact.findById(contactId);
+const getById = async (req, res) => {
+  const {
+    user: { _id: owner },
+    params: { contactId },
+  } = req;
+  const contact = await Contact.findOne({ _id: contactId, owner });
 
   if (!contact) {
     throw HttpError(404, "Not found");
@@ -20,13 +29,17 @@ const getById = async ({ params }, res) => {
 };
 
 const add = async (req, res) => {
-  const newContact = await Contact.create(req.body);
+  const { _id: owner } = req.user;
+  const newContact = await Contact.create({ ...req.body, owner });
   res.status(201).json(newContact);
 };
 
 const remove = async (req, res) => {
-  const { contactId } = req.params;
-  const result = await Contact.findByIdAndDelete(contactId);
+  const {
+    user: { _id: owner },
+    params: { contactId },
+  } = req;
+  const result = await Contact.findOneAndDelete({ _id: contactId, owner });
 
   if (!result) {
     throw HttpError(404, "Not found");
@@ -37,14 +50,21 @@ const remove = async (req, res) => {
 };
 
 const update = async (req, res) => {
-  const { contactId } = req.params;
+  const {
+    user: { _id: owner },
+    params: { contactId },
+  } = req;
 
   if (!Object.keys(req.body).length)
     return res.status(400).json({ message: "missing fields" });
 
-  const updatedContact = await Contact.findByIdAndUpdate(contactId, req.body, {
-    new: true,
-  });
+  const updatedContact = await Contact.findOneAndUpdate(
+    { _id: contactId, owner },
+    req.body,
+    {
+      new: true,
+    }
+  );
 
   if (!updatedContact) {
     throw HttpError(404, "Not found");
@@ -53,11 +73,17 @@ const update = async (req, res) => {
 };
 
 const updateStatusContact = async (req, res) => {
-  const { contactId } = req.params;
-  const updatedContact = await Contact.findByIdAndUpdate(contactId, req.body, {
-    new: true,
-  });
-  console.log(updatedContact);
+  const {
+    user: { _id: owner },
+    params: { contactId },
+  } = req;
+  const updatedContact = await Contact.findOneAndUpdate(
+    { _id: contactId, owner },
+    req.body,
+    {
+      new: true,
+    }
+  );
   if (!updatedContact) {
     throw HttpError(404, "Not found");
   }
