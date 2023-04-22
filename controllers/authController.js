@@ -1,5 +1,9 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const gravatar = require("gravatar");
+const fs = require("fs/promises");
+const path = require("path");
+const Jimp = require("jimp");
 
 const { User } = require("../models/user");
 
@@ -9,6 +13,8 @@ const { HttpError } = require("../helpers");
 
 const { SECRET_KEY } = process.env;
 
+const avatarDir = path.join(__dirname, "../", "public", "avatars");
+
 const register = async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email });
@@ -16,8 +22,13 @@ const register = async (req, res) => {
     throw HttpError(409, "Email in use");
   }
   const hashPassword = await bcrypt.hash(password, 10);
+  const avatarURL = gravatar.url(email);
 
-  const newUser = await User.create({ ...req.body, password: hashPassword });
+  const newUser = await User.create({
+    ...req.body,
+    password: hashPassword,
+    avatarURL,
+  });
   res.status(201).json({
     user: { email: newUser.email, subscription: newUser.subscription },
   });
@@ -71,10 +82,35 @@ const updateSubscription = async (req, res) => {
   res.json({ email, subscription });
 };
 
+const updateAvatar = async (req, res, next) => {
+  const { _id } = req.user;
+  const { path: tmpUpload, filename } = req.file;
+  const avatarName = `${_id}_${filename}`;
+
+  try {
+    const resultUpload = path.join(avatarDir, avatarName);
+    const img = await Jimp.read(tmpUpload);
+    await img.resize(250, 250);
+    await img.writeAsync(resultUpload);
+
+    
+  } catch (error) {
+    return next(error);
+  } finally {
+    await fs.unlink(tmpUpload);
+  }
+
+  const avatarURL = path.join("avatars", avatarName);
+  await User.findByIdAndUpdate(_id, { avatarURL });
+
+  res.json(avatarURL);
+};
+
 module.exports = {
   register: ctrlWrapper(register),
   login: ctrlWrapper(login),
   getCurrent: ctrlWrapper(getCurrent),
   logout: ctrlWrapper(logout),
   updateSubscription: ctrlWrapper(updateSubscription),
+  updateAvatar: ctrlWrapper(updateAvatar),
 };
